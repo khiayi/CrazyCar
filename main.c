@@ -317,10 +317,14 @@ void EINT3_IRQHandler (void){
 //	myintsw3 = 1;
 //	printf("%d\n", myintsw3);
 	if((LPC_GPIOINT->IO0IntStatF)>>4 & 1){
-		MODE_TOGGLE= 1;
-//		if (MODE_TOGGLE) {
-//			MODE_TOGGLE1 = 1;
-//		}
+		if (MODE_TOGGLE1 == 0) {
+		        		printf("test%d/n", MODE_TOGGLE1);
+		        		MODE_TOGGLE1 = 1;
+		        		MODE_TOGGLE = 1;
+		        	} else{
+		MODE_TOGGLE = 2;
+		        	}
+
 		printf("sw3EINT\n");
 		LPC_GPIOINT->IO0IntClr = 1<<4;
 		printf("%d", MODE_TOGGLE);
@@ -460,7 +464,6 @@ int main (void) {
 		GPIO_ClearValue( 0, (1<<26) ); // Clear blue
 		oled_clearScreen(OLED_COLOR_BLACK); // cls
 	}
-	rgb_setLeds(RGB_RED);
 
     while (1)
     {
@@ -545,12 +548,12 @@ int main (void) {
         				btnSW3 = (GPIO_ReadValue(0) >> 4) & 0x01;
         				btn1 = (GPIO_ReadValue(2) >> 10) & 0x01;
 
-        sprintf(oled_disp, "Gforce: %.1f", x/9.8);
-        oled_putString(10,10,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
-        sprintf(oled_disp, "Temp: %2.2f", my_temp_value/10.0 );
-        oled_putString(10,20,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
-        sprintf(oled_disp, "Light: %u", my_light_value);
-        oled_putString(10,30,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
+//        sprintf(oled_disp, "Gforce: %.1f", x/9.8);
+//        oled_putString(10,10,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
+//        sprintf(oled_disp, "Temp: %2.2f", my_temp_value/10.0 );
+//        oled_putString(10,20,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
+//        sprintf(oled_disp, "Light: %u", my_light_value);
+//        oled_putString(10,30,(uint8_t *) oled_disp, OLED_COLOR_WHITE, OLED_COLOR_BLACK);
 //
 //        /* ############ Trimpot and RGB LED  ########### */
 //        /* # */
@@ -572,6 +575,7 @@ int main (void) {
 //        }
 
 //    	if (Timer(rgbTimer, 333)){
+//    		GPIO_ClearValue( 2, (1<<1) );
 //    		rgb_setLeds(RGB_RED);
 //    	}
 //    	if (Timer(rgbTimer, 666)){
@@ -580,14 +584,38 @@ int main (void) {
 //    	}
 
     	/* ############ MODES  ########### */
-//        if (MODE_TOGGLE) {
-//        	if (MODE_TOGGLE1 == 0) {
-//        		printf("test%d/n", MODE_TOGGLE1);
-//        		MODE_TOGGLE1 = 1;
-//        		startTicks = getTicks();
-//        	}
-//
-//        	}
+        if (MODE_TOGGLE1 && Timer(modeTimer, 1000)) {
+        	printf("inside\n");
+        	if(MODE_TOGGLE == 1) {
+        		if(mode == MODE_STAT) {
+               		mode = MODE_FOR;
+        			MODE_TOGGLE1 = 0;
+        			MODE_TOGGLE = 0;
+        		} else if (mode == MODE_FOR) {
+        			mode = MODE_STAT;
+               		MODE_TOGGLE1 = 0;
+               		MODE_TOGGLE = 0;
+        		} else if (mode == MODE_REV){
+        			mode = MODE_STAT;
+        			MODE_TOGGLE1 = 0;
+        			MODE_TOGGLE = 0;
+        		}
+        	}
+
+
+        	if(MODE_TOGGLE == 2) {
+        		if(mode == MODE_STAT) {
+        			mode = MODE_REV;
+        			MODE_TOGGLE1 = 0;
+        			MODE_TOGGLE = 0;
+        		} else {
+        			mode = MODE_STAT;
+        			MODE_TOGGLE1 = 0;
+        			MODE_TOGGLE = 0;
+        		}
+        	}
+
+        	}
 //        }
 
 //        if (Timer(modeTimer, 1000)) {
@@ -611,24 +639,24 @@ int main (void) {
 //        	(MODE_TOGGLE) = 0;
 //        }
 //
-//    	switch (mode) {
-//    	case MODE_STAT	:
-//    		reset();
-//    		break;
-//
-//    	case MODE_FOR:
-//    		rgb_setLeds(RGB_RED);
-//    		break;
-//
-//    	case MODE_REV:
-//    		rgb_setLeds(RGB_BLUE);
-//    		break;
-//
-//    	}
+    	switch (mode) {
+    	case MODE_STAT	:
+    		reset();
+    		break;
+
+    	case MODE_FOR:
+    		rgb_setLeds(RGB_RED);
+    		break;
+
+    	case MODE_REV:
+    		rgb_setLeds(RGB_BLUE);
+    		break;
+
+    	}
 
 //        rgb_setLeds(RGB_RED);
 
-        Timer0_Wait(1);
+       // Timer0_Wait(1);
     }
 
 
@@ -642,4 +670,3 @@ void check_failed(uint8_t *file, uint32_t line)
 	/* Infinite loop */
 	while(1);
 }
-
