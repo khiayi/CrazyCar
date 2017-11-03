@@ -646,10 +646,18 @@ int main (void) {
 
     	case MODE_FOR:
     		rgb_setLeds(RGB_RED);
+			//light and ledarray idle
+			//7seg disp hex value increase by 1 every second
+			//temp and acc smapled every 1s
+			//blink red if temp exceeeds threshold
+			//blink blue if acc exceeds threshold
     		break;
 
     	case MODE_REV:
     		rgb_setLeds(RGB_BLUE);
+			//light smapled every 1s
+			//ledarray proportional to light sensor value
+			//temp and acc idle
     		break;
 
     	}
