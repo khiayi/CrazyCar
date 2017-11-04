@@ -31,7 +31,7 @@ int myintsw3 = 0;
 volatile int MODE_TOGGLE= 0, MODE_TOGGLE1 = 0;
 
 //light_flag
-// volatile int light_flag = 0;
+volatile int light_flag = 0;
 
 //SYS Modes
 typedef enum {
@@ -39,7 +39,7 @@ typedef enum {
 } system_mode_t;
 volatile system_mode_t mode;
 
-// const uint32_t lightLoLimit = 50, lightHiLimit = 3891;
+const uint32_t lightLoLimit = 50, lightHiLimit = 3891;
 
 static void moveBar(uint8_t steps, uint8_t dir)
 {
@@ -531,6 +531,9 @@ int main (void) {
 //    		line[line_count] = ' ';
 //    	}
 //    	len = 0;
+	    
+	//test light_interrupt
+	printf("%d\n", light_flag);
 
     	my_temp_value = temp_read();
     	//printf("The temp value is %2.2f \n",my_temp_value/10.0);
