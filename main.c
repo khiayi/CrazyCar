@@ -30,11 +30,16 @@ int myintsw3 = 0;
 //button for switching mode
 volatile int MODE_TOGGLE= 0, MODE_TOGGLE1 = 0;
 
+//light_flag
+// volatile int light_flag = 0;
+
 //SYS Modes
 typedef enum {
 	MODE_STAT, MODE_FOR, MODE_REV
 } system_mode_t;
 volatile system_mode_t mode;
+
+// const uint32_t lightLoLimit = 50, lightHiLimit = 3891;
 
 static void moveBar(uint8_t steps, uint8_t dir)
 {
@@ -298,6 +303,12 @@ static void init_GPIO(void)
 	PinCfg.Pinnum = 25;
 	PINSEL_ConfigPin(&PinCfg);//rotary switch
 	GPIO_SetDir(0, 1 << 25, 0);
+	
+	//light_sensor
+	PinCfg.Pinnum = 5;
+	PinCfg.Portnum = 2;
+	PINSEL_ConfigPin(&PinCfg);
+	GPIO_SetDir(2, (1<<5), 0);
 }
 
 void SysTick_Handler (void){
@@ -312,10 +323,31 @@ int Timer(uint32_t startTicks, int delayInMs){
 	return (getTicks() - startTicks) >= delayInMs;
 }
 
+//<-----Setting Priority------
+NVIC_SetPriority(SysTick_IRQn, 1); // Timer has the highest priority.
+
+NVIC_ClearPendingIRQ(EINT3_IRQn);
+NVIC_SetPriority(EINT3_IRQn, 2); // Light has higher priority than button.
+NVIC_EnableIRQ(EINT3_IRQn);
+
+NVIC_ClearPendingIRQ(MODE_IRQn);
+NVIC_SetPriority(MODE_IRQn, 3);
+NVIC_EnableIRQ (MODE_IRQn);
+
 void EINT3_IRQHandler (void){
-	//printf("EINT3\n");
-//	myintsw3 = 1;
-//	printf("%d\n", myintsw3);
+	printf("EINT3\n");
+	myintsw3 = 1;
+	printf("%d\n", myintsw3);
+	if ((LPC_GPIOINT->IO2IntStatF>>5)& 0x1) {
+		light_flag = 1;
+		LPC_GPIOINT->IO2IntClr = (1<<5); // Clear the interrupt register
+		light_clearIrqStatus(); // Clear IRQ otherwise the interrupt will never be issued again.
+	}
+
+}
+
+void MODE_IRQHandler (void) {
+	
 	if((LPC_GPIOINT->IO0IntStatF)>>4 & 1){
 		if (MODE_TOGGLE1 == 0) {
 		        		printf("test%d/n", MODE_TOGGLE1);
@@ -329,21 +361,12 @@ void EINT3_IRQHandler (void){
 		LPC_GPIOINT->IO0IntClr = 1<<4;
 		printf("%d", MODE_TOGGLE);
 	}
-
-	if ((LPC_GPIOINT->IO0IntStatF)>>25 & 1){
-		printf("P0.25 has been rotated \n");
-		LPC_GPIOINT->IO0IntClr = 1<<25;
-	}
-	printf("Exit OK\n");
+// 	if ((LPC_GPIOINT->IO0IntStatF)>>25 & 1){
+// 		printf("P0.25 has been rotated \n");
+// 		LPC_GPIOINT->IO0IntClr = 1<<25;
+// 	}
+// 	printf("Exit OK\n");
 }
-//void TOGGLE (void){
-//	MODE_TOGGLE = MODE_TOGGLE1 + MODE_TOGGLE;
-//	MODE_TOGGLE1 = 0;
-//			if(MODE_TOGGLE = 3){
-//				MODE_TOGGLE = 0;
-//			}
-//
-//}
 
 void ready_uart(void){
 	// PINSEL Configuration
@@ -451,11 +474,19 @@ int main (void) {
 	uint8_t line_count = 0;
 
 	ready_uart();
-
+	
+	/* <----- LIGHTSENSOR ----- */
+	light_setRange(LIGHT_RANGE_4000);
+	light_setLoThreshold(lightLoLimit);
+	light_setHiThreshold(lightHiLimit);
+	light_setIrqInCycles(LIGHT_CYCLE_1);
+	light_clearIrqStatus();
+	LPC_GPIOINT->IO2IntClr = 1 << 5;
+	LPC_GPIOINT->IO2IntEnF |= 1 << 5; //falling edge interrupt for p2.5
+	
+	//sw3
 	LPC_GPIOINT->IO0IntEnF |= 1 << 4;
 	LPC_GPIOINT->IO0IntEnF |= 1 <<25;
-
-	NVIC_EnableIRQ (EINT3_IRQn);
 
 	void reset() {
 		led7seg_setChar('{',FALSE); // Clear 7SEG display
